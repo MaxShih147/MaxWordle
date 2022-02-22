@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\kwshi\source\repos\MaxWordle\Wordle.cpp">
+      <Filter>Wordle</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imconfig.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imgui_internal.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imstb_rectpack.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imstb_truetype.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\imstb_textedit.h">
+      <Filter>imgui\header</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\imgui\backends\imgui_impl_glfw.h">
+      <Filter>imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kwshi\source\repos\MaxWordle\Wordle.h">
+      <Filter>Wordle</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\kwshi\source\repos\MaxWordle\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{7CF636B7-0882-376B-9312-970441B9E25D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9EF7A8EA-C426-3B1D-83F9-B46588284BCE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{bbb9aabb-b167-4e24-a716-4227de3c4a42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\header">
+      <UniqueIdentifier>{a7c4a8b9-d16f-47a5-a8b7-72b7c12364c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\backends">
+      <UniqueIdentifier>{e31f34ea-828a-44a6-87b0-de6fe8a19ca3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Wordle">
+      <UniqueIdentifier>{7b8e7f98-e400-4d7c-a50d-17f16ebb24ce}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
