@@ -10,6 +10,7 @@
 
 enum WordleState
 {
+    ws_unknown,
     ws_correct,
     ws_included,
     ws_excluded
@@ -28,6 +29,7 @@ public:
     void GenerateTodayPuzzle();
     const std::string& GetAnswer();
     const std::set<std::string>& GetAllowedGuessesList();
+    bool CheckGuessValidation(const std::string& guess);
     bool PrintGuessResult(const std::string& guess);
     std::vector<WordleState> GetGuessResult(const std::string& guess);
     int GetGuessLimit();

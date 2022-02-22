@@ -56,16 +56,30 @@ const std::set<std::string>& Wordle::GetAllowedGuessesList()
     return allowedGuessesList;
 }
 
+bool Wordle::CheckGuessValidation(const std::string& guess)
+{
+    std::string _guess = guess;
+    std::transform(_guess.begin(), _guess.end(), _guess.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
+    return allowedGuessesList.find(_guess) != allowedGuessesList.end();
+}
+
 bool Wordle::PrintGuessResult(const std::string& guess)
 {
+    // convert to lower
+    std::string _guess = guess;
+    std::transform(_guess.begin(), _guess.end(), _guess.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
     std::string result;
     for (auto i = 0; i < wordLength; ++i)
     {
-        if (answerToday[i] == guess[i])
+        if (answerToday[i] == _guess[i])
         {
             result += "\033[92;102m██\033[m ";
         }
-        else if (exists[guess[i]])
+        else if (exists[_guess[i]])
         {
             result += "\033[93;103m██\033[m ";
         }
@@ -77,11 +91,11 @@ bool Wordle::PrintGuessResult(const std::string& guess)
     result += "   ";
     for (auto i = 0; i < wordLength; ++i)
     {
-        if (answerToday[i] == guess[i])
+        if (answerToday[i] == _guess[i])
         {
             result += "\033[92m";
         }
-        else if (exists[guess[i]])
+        else if (exists[_guess[i]])
         {
             result += "\033[93m";
         }
@@ -89,29 +103,34 @@ bool Wordle::PrintGuessResult(const std::string& guess)
         {
             result += "\033[90m";
         }
-        result += guess[i];
+        result += _guess[i];
         result += "\033[m";
     }
 
     std::cout << result;
-    return guess == answerToday;
+    return _guess == answerToday;
 }
 
 std::vector<WordleState> Wordle::GetGuessResult(const std::string& guess)
 {
+    // convert to lower
+    std::string _guess = guess;
+    std::transform(_guess.begin(), _guess.end(), _guess.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
     std::vector<WordleState> result(wordLength, ws_excluded);
     for (auto i = 0; i < wordLength; ++i)
     {
-        if (answerToday[i] == guess[i])
+        if (answerToday[i] == _guess[i])
         {
             result[i] = ws_correct;
         }
-        else if (exists[guess[i]])
+        else if (exists[_guess[i]])
         {
             result[i] = ws_included;
         }
-        return result;
     }
+    return result;
 }
 
 int Wordle::GetGuessLimit()

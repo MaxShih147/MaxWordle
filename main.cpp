@@ -1,11 +1,17 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
 
+
 #include "Wordle.h"
+
+#define WITH_GUI
+
+#if defined(WITH_GUI)
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include "imgui/backends/imgui_impl_glfw.h"
 #include "imgui/backends/imgui_impl_opengl3.h"
 
@@ -13,21 +19,39 @@
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
-//
-//// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-//// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-//// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
-//#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-//#pragma comment(lib, "legacy_stdio_definitions")
-//#endif
-//
+
+// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
+// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
+// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glfw3.lib")
+#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
+#pragma comment(lib, "legacy_stdio_definitions")
+#endif
+#endif
 
 Wordle* g_wordle = nullptr;
+ImFont* g_font_12 = nullptr;
+ImFont* g_font_20 = nullptr;
 
+#if defined(WITH_GUI)
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
+
+class ButtonColor
+{
+public:
+    ButtonColor() {}
+    ButtonColor(ImVec4 _normal, ImVec4 _hovered, ImVec4 _active)
+        : normal(_normal), hovered(_hovered), active(_active)
+    {
+    }
+    ImVec4 normal;
+    ImVec4 hovered;
+    ImVec4 active;
+};
 
 void ShowTodayPuzzle()
 {
@@ -38,20 +62,72 @@ void ShowTodayPuzzle()
                     {'Z', 'X', 'C', 'V', 'B', 'N', 'M'}
             };
 
-//    static bool selected[26]
-//            {
-//                    // 1st Line - Q W E R T Y U I O P
-//                    false, false, false, false, false, false, false, false, false, false,
-//                    // 2nd Line - A S D F G H J K L
-//                    false, false, false, false, false, false, false, false, false,
-//                    // 3rd Line - Z X C V B N M
-//                    false, false, false, false, false, false, false
-//            };
+    static std::map<char, WordleState> letterStates
+    {
+        {'A', ws_unknown}, {'B', ws_unknown}, {'C', ws_unknown}, {'D', ws_unknown}, {'E', ws_unknown},
+        {'F', ws_unknown}, {'G', ws_unknown}, {'H', ws_unknown}, {'I', ws_unknown}, {'J', ws_unknown},
+        {'K', ws_unknown}, {'L', ws_unknown}, {'M', ws_unknown}, {'N', ws_unknown}, {'O', ws_unknown},
+        {'P', ws_unknown}, {'Q', ws_unknown}, {'R', ws_unknown}, {'S', ws_unknown}, {'T', ws_unknown},
+        {'U', ws_unknown}, {'V', ws_unknown}, {'W', ws_unknown}, {'X', ws_unknown}, {'Y', ws_unknown},
+        {'Z', ws_unknown}
+    };
+
+    static std::map<char, bool> fixedStateToCorrect
+    {
+        {'A', false}, {'B', false}, {'C', false}, {'D', false}, {'E', false},
+        {'F', false}, {'G', false}, {'H', false}, {'I', false}, {'J', false},
+        {'K', false}, {'L', false}, {'M', false}, {'N', false}, {'O', false},
+        {'P', false}, {'Q', false}, {'R', false}, {'S', false}, {'T', false},
+        {'U', false}, {'V', false}, {'W', false}, {'X', false}, {'Y', false},
+        {'Z', false}
+    };
+
+
+    static std::map<WordleState, ButtonColor> stateColorCodeForKeyboard
+    {
+        {ws_unknown, ButtonColor(
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
+        {ws_correct, ButtonColor(
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
+        {ws_included, ButtonColor(
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
+        {ws_excluded, ButtonColor(
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
+    };
+
+    static std::map<WordleState, ButtonColor> stateColorCodeForGuessList
+    {
+        {ws_unknown, ButtonColor(
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
+        {ws_correct, ButtonColor(
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
+            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
+        {ws_included, ButtonColor(
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
+            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
+        {ws_excluded, ButtonColor(
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
+            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
+    };
 
     static int wordLength = g_wordle->GetWordLength();
     static int guessLimit = g_wordle->GetGuessLimit();
+    static std::vector<WordleState> defaultStates(wordLength, ws_unknown);
     static std::vector<std::string> guessList(guessLimit, "");
-    static std::vector<std::vector<WordleState>> stateList(guessLimit);
+    static std::vector<std::vector<WordleState>> stateList(guessLimit, defaultStates);
     static int currentGuess = 0;
 
     bool guessTrigger = false;
@@ -59,7 +135,7 @@ void ShowTodayPuzzle()
     if (ImGui::TreeNode("Show My Little Keyboard"))
     {
         int currentIndex = 0;
-        ImVec2 gridSize(20, 20);
+        ImVec2 gridSize(40, 40);
 
         for (auto i = 0; i < lettersPerLines.size(); ++i)
         {
@@ -72,24 +148,66 @@ void ShowTodayPuzzle()
                     ImGui::SameLine();
                 }
 
-                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1 / 7.0f, 0.6f, 0.6f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1 / 7.0f, 0.7f, 0.7f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1 / 7.0f, 0.8f, 0.8f));
+                auto state = letterStates[lettersPerLines[i][j]];
+                if (fixedStateToCorrect[lettersPerLines[i][j]])
+                {
+                    state = ws_correct;
+                }
+                auto color = stateColorCodeForKeyboard[state];
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)color.hovered);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)color.active);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+                ImGui::PushFont(g_font_20);
                 if (ImGui::Button(name.c_str(), gridSize))
                 {
-//                    selected[currentIndex] = true;
                     guessList[currentGuess] += name;
                 }
+                ImGui::PopFont();
+                ImGui::PopStyleVar(1);
+                ImGui::PopStyleColor(3);
+
                 ++currentIndex;
             }
         }
 
-        if (ImGui::Button("Enter"))
+        ImGui::PushFont(g_font_20);
+        if (ImGui::Button("enter"))
         {
             std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
-            stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
-            ++currentGuess;
+
+            bool valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
+            if (valid)
+            {
+                stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
+                for (auto i = 0; i < guessList[currentGuess].size(); ++i)
+                {
+                    letterStates[guessList[currentGuess][i]] = stateList[currentGuess][i];
+                    if (stateList[currentGuess][i] == ws_correct)
+                    {
+                        fixedStateToCorrect[guessList[currentGuess][i]] = true;
+                    }
+                }
+                ++currentGuess;
+            }
+            else
+            {
+                guessList[currentGuess].clear();
+            }
         }
+        ImGui::PopFont();
+
+        ImGui::SameLine();
+
+        ImGui::PushFont(g_font_20);
+        if (ImGui::Button("back"))
+        {
+            if (!guessList[currentGuess].empty())
+            {
+                guessList[currentGuess].pop_back();
+            }
+        }
+        ImGui::PopFont();
 
         ImGui::TreePop();
     }
@@ -98,7 +216,6 @@ void ShowTodayPuzzle()
         ImVec2 gridSize(40, 40);
         ImGuiStyle& style = ImGui::GetStyle();
 
-
         for (int i = 0; i < guessLimit; ++i)
         {
             for (auto j = 0; j < wordLength; ++j) {
@@ -106,51 +223,47 @@ void ShowTodayPuzzle()
                 {
                     ImGui::SameLine();
                 }
-                ImGui::PushID(i * wordLength + j);
+
+                //ImGui::PushID(i * wordLength + j);
 
                 std::string value = " ";
-                if (i < currentGuess)
+                if (i <= currentGuess)
                 {
-                    value = guessList[i][j];
+                    if (j < guessList[i].size())
+                    {
+                        value = guessList[i][j];
+                    }
                 }
+
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
+                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+
+                auto state = stateList[i];
+                auto color = stateColorCodeForGuessList[state[j]];
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
+
+                ImGui::PushFont(g_font_20);
+
                 ImGui::Button(value.c_str(), gridSize);
-                ImGui::PopID();
+                
+                ImGui::PopFont();
+                ImGui::PopStyleColor(1);
+                ImGui::PopItemFlag();
+                ImGui::PopStyleVar(1);
+                //ImGui::PopID();
             }
         }
         ImGui::TreePop();
     }
 }
+#endif
 
+#if defined(WITH_GUI)
 int main()
 {
     g_wordle = new Wordle;
     g_wordle->GenerateTodayPuzzle();
 
-//    int guessCount = wordle.GetGuessLimit();
-//    int wordLength = wordle.GetWordLength();
-//    std::string answer = wordle.GetAnswer();
-//
-//    for (auto i = 0; i < guessCount; ++i)
-//    {
-//        // INPUT SECTION
-//        std::cout << ">> ";
-//        std::string guess;
-//        std::cin >> guess;
-//
-//        if (guess.length() != wordLength) {
-//            std::cout << "[DEBUG] Please input a word with 5 letters.\n";
-//            return 0;
-//        }
-//
-//        // convert to lower
-//        std::transform(guess.begin(), guess.end(), guess.begin(),
-//                       [](unsigned char c){ return std::tolower(c); });
-//
-//        wordle.GetGuessResult(guess);
-//        std::cout << "\n";
-//    }
-//
-//    return 0;
 //    // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -220,6 +333,12 @@ int main()
     bool show_max_dev_windows = true;
     bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    //ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontDefault();
+    g_font_12 = io.Fonts->AddFontFromFileTTF("fonts/arial.ttf", 12);
+    g_font_20 = io.Fonts->AddFontFromFileTTF("fonts/arial.ttf", 20);
+
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -300,5 +419,38 @@ int main()
     g_wordle = nullptr;
 
     return 0;
-
 }
+
+#else
+int main()
+{
+    g_wordle = new Wordle;
+    g_wordle->GenerateTodayPuzzle();
+
+        int guessCount = g_wordle->GetGuessLimit();
+        int wordLength = g_wordle->GetWordLength();
+        std::string answer = g_wordle->GetAnswer();
+    
+        for (auto i = 0; i < guessCount; ++i)
+        {
+            // INPUT SECTION
+            std::cout << ">> ";
+            std::string guess;
+            std::cin >> guess;
+    
+            if (guess.length() != wordLength) {
+                std::cout << "[DEBUG] Please input a word with 5 letters.\n";
+                return 0;
+            }
+    
+            // convert to lower
+            std::transform(guess.begin(), guess.end(), guess.begin(),
+                           [](unsigned char c){ return std::tolower(c); });
+    
+            g_wordle->PrintGuessResult(guess);
+            std::cout << "\n";
+        }
+    
+        return 0;
+}
+#endif
