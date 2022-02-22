@@ -1,6 +1,7 @@
 ﻿#include <algorithm>
 #include <iostream>
 #include <string>
+#include <random>
 #include <vector>
 #include <map>
 
@@ -33,6 +34,14 @@
 Wordle* g_wordle = nullptr;
 ImFont* g_font_12 = nullptr;
 ImFont* g_font_20 = nullptr;
+ImVec2 g_window_pos_default(10, 10);
+ImVec2 g_window_pos = g_window_pos_default;
+int g_frame_count = 0;
+
+// Generate today random answer from answer list.
+std::random_device rd;
+std::mt19937 mt(rd());
+std::uniform_int_distribution<int> dist(-10, 10);
 
 #if defined(WITH_GUI)
 static void glfw_error_callback(int error, const char* description)
@@ -52,6 +61,18 @@ public:
     ImVec4 hovered;
     ImVec4 active;
 };
+
+void RunWindowVibrationEffect(bool open)
+{
+    if (open)
+    {
+        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
+    }
+    else
+    {
+        g_window_pos = g_window_pos_default;
+    }
+}
 
 void ShowTodayPuzzle()
 {
@@ -129,6 +150,7 @@ void ShowTodayPuzzle()
     static std::vector<std::string> guessList(guessLimit, "");
     static std::vector<std::vector<WordleState>> stateList(guessLimit, defaultStates);
     static int currentGuess = 0;
+    static bool win = false;
 
     bool guessTrigger = false;
 
@@ -171,12 +193,15 @@ void ShowTodayPuzzle()
             }
         }
 
+        bool valid = true;
+
         ImGui::PushFont(g_font_20);
         if (ImGui::Button("enter"))
         {
             std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
 
-            bool valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
+            valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
+                        
             if (valid)
             {
                 stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
@@ -188,14 +213,36 @@ void ShowTodayPuzzle()
                         fixedStateToCorrect[guessList[currentGuess][i]] = true;
                     }
                 }
+
+                bool _win = true;
+                for (auto i = 0; i < stateList[currentGuess].size(); ++i)
+                {
+                    _win &= stateList[currentGuess][i] == ws_correct;
+                }
+                win = _win;
                 ++currentGuess;
             }
             else
             {
+                ++g_frame_count;
                 guessList[currentGuess].clear();
             }
         }
         ImGui::PopFont();
+
+        // try to effect for N frame
+        bool open = !valid;
+        if (g_frame_count > 0 && g_frame_count < 10
+            )
+        {
+            g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
+            ++g_frame_count;
+        }
+        else
+        {
+            g_window_pos = g_window_pos_default;
+            g_frame_count = 0;
+        }
 
         ImGui::SameLine();
 
@@ -254,6 +301,19 @@ void ShowTodayPuzzle()
             }
         }
         ImGui::TreePop();
+    }
+
+    if (win)
+    {
+        ImGui::SetNextWindowPos(g_window_pos);
+        //ImGui::SetNextWindowSize(ImVec2());
+        ImGui::Begin("Win", &win);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        ImGui::Text("You Win!");
+        if (ImGui::Button("New Game"))
+        {
+            win = false;
+        }
+        ImGui::End();
     }
 }
 #endif
@@ -385,6 +445,8 @@ int main()
 
         if (show_max_dev_windows)
         {
+            ImGui::SetNextWindowPos(g_window_pos);
+            //ImGui::SetNextWindowSize(ImVec2());
             ImGui::Begin("Start Today's Puzzle", &show_max_dev_windows);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             ImGui::Text("...");
             ShowTodayPuzzle();
