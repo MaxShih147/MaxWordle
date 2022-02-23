@@ -26,6 +26,7 @@ public:
     }
 public:
     void GenerateDebugPuzzle(const std::string& _answer);
+    void GenerateNewPuzzle();
     void GenerateTodayPuzzle();
     const std::string& GetAnswer();
     const std::set<std::string>& GetAllowedGuessesList();
@@ -45,6 +46,7 @@ private:
     int wordLength;
     std::string answerToday;
     std::set<std::string> allowedGuessesList;
+    std::vector<std::string> answerList;
 };
 
 #endif //WEISWORDLE_WORDLE_H

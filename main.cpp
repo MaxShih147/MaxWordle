@@ -70,6 +70,16 @@ ImVec2 backButtonSize(60, 50);
 int backButtonSpacingY = 10;
 int backButtonStartPositionX = 463;       // should be function of above parameters.
 int backButtonStartPositionY = keyboardStartPositionPerLine[2].y;
+// ! Share Button
+ImVec2 shareButtonSize(180, 50);
+float shareButtonRound = 20.0f;
+int shareButtonStartPositionX = 100;       // should be function of above parameters.
+int shareButtonStartPositionY = 230;
+// ! New Game Button
+ImVec2 newGameButtonSize(180, 50);
+float newGameButtonRound = 20.0f;
+int newGameButtonStartPositionX = 100;       // should be function of above parameters.
+int newGameButtonStartPositionY = 300;
 // ! - Guess Panel
 ImVec2 guessPanelSize(70, 70);
 float guessPanelRound = 35.0f;
@@ -104,6 +114,18 @@ ButtonColor enterButtonColor
     (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
 );
 ButtonColor backButtonColor
+(
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
+);
+ButtonColor newGameButtonColor
+(
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
+);
+ButtonColor shareButtonColor
 (
     (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
     (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
@@ -364,14 +386,64 @@ void ShowTodayPuzzle()
 
     if (win)
     {
-        ImGui::SetNextWindowPos(g_window_pos);
-        //ImGui::SetNextWindowSize(ImVec2());
-        ImGui::Begin("Win", &win);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text("You Win!");
-        if (ImGui::Button("New Game"))
+
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration/* | ImGuiWindowFlags_NoBackground*/;
+
+        ImGui::SetNextWindowPos(ImVec2(500, 250));
+        ImGui::SetNextWindowSize(ImVec2(384, 400));
+        ImGui::Begin("Win", &win, window_flags);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        //ImGui::Text("You Win!");
+
+        ImGui::SetCursorPos(ImVec2(shareButtonStartPositionX, shareButtonStartPositionY));
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)shareButtonColor.normal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)shareButtonColor.hovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)shareButtonColor.active);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, shareButtonRound);
+        ImGui::PushFont(g_font_24);
+
+        if (ImGui::Button("Share", shareButtonSize))
+        {
+        }
+
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(1);
+
+        
+        ImGui::SetCursorPos(ImVec2(newGameButtonStartPositionX, newGameButtonStartPositionY));
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)newGameButtonColor.normal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)newGameButtonColor.hovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)newGameButtonColor.active);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, newGameButtonRound);
+        ImGui::PushFont(g_font_24);
+
+        if (ImGui::Button("New Game", newGameButtonSize))
         {
             win = false;
+            g_wordle->GenerateNewPuzzle();
+
+            // ! Reset all states.
+            for (auto i = 0; i < lettersPerLines.size(); ++i)
+            {
+                for (auto j = 0; j < lettersPerLines[i].size(); ++j)
+                {
+                    letterStates[lettersPerLines[i][j]] = ws_unknown;
+                    fixedStateToCorrect[lettersPerLines[i][j]] = false;
+                }
+            }
+ 
+            wordLength = g_wordle->GetWordLength();
+            guessLimit = g_wordle->GetGuessLimit();
+            currentGuess = 0;
+
+            guessList = std::vector<std::string>(guessLimit, "");
+            stateList = std::vector<std::vector<WordleState>>(guessLimit, defaultStates);
         }
+
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(1);
+
         ImGui::End();
     }
 }

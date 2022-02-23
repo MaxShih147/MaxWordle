@@ -39,6 +39,21 @@ void Wordle::GenerateDebugPuzzle(const std::string &_answer)
     }
 }
 
+void Wordle::GenerateNewPuzzle()
+{
+    exists.clear();
+
+    // Generate today random answer from answer list.
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<size_t> dist(0, answerList.size() - 1);
+    answerToday = answerList[dist(mt)];
+
+    for (auto& c : answerToday) {
+        exists[c] = true;
+    }
+}
+
 void Wordle::GenerateTodayPuzzle()
 {
     // Setting...
@@ -164,7 +179,6 @@ void Wordle::LoadAllowedGuessesList(const std::string& inputDirectory)
 
 void Wordle::LoadAnswersAlphabeticalList(const std::string& inputDirectory)
 {
-    std::vector<std::string> answerList;
     std::ifstream answerListStream(inputDirectory);
     if (answerListStream.is_open())
     {
