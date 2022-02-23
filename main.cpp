@@ -34,7 +34,8 @@
 Wordle* g_wordle = nullptr;
 ImFont* g_font_12 = nullptr;
 ImFont* g_font_20 = nullptr;
-ImVec2 g_window_pos_default(10, 10);
+ImFont* g_font_24 = nullptr;
+ImVec2 g_window_pos_default(400, 50);
 ImVec2 g_window_pos = g_window_pos_default;
 int g_frame_count = 0;
 
@@ -42,6 +43,40 @@ int g_frame_count = 0;
 std::random_device rd;
 std::mt19937 mt(rd());
 std::uniform_int_distribution<int> dist(-10, 10);
+
+
+// ! Layout Section
+// ! - Window
+ImVec2 puzzelWindowSize(600, 800);
+ImVec2 puzzelWindowPosition(400, 50);
+// ! - Keyboard
+ImVec2 keyboardSize(40, 50);
+int keyboardSpacingY = 10;
+int keyboardStartPositionX = 55;       // should be function of above parameters.
+int keyboardStartPositionY = 560;      // should be function of above parameters.
+ImVec2 keyboardStartPositionPerLine[3] // should be function of above parameters.
+{
+    ImVec2(keyboardStartPositionX, keyboardStartPositionY),
+    ImVec2(keyboardStartPositionX + 24, keyboardStartPositionY + keyboardSize.y + keyboardSpacingY),
+    ImVec2(keyboardStartPositionX + 72, keyboardStartPositionY + 2 * (keyboardSize.y + keyboardSpacingY))
+};
+// ! Enter Button
+ImVec2 enterButtonSize(60, 50);
+int enterButtonSpacingY = 10;
+int enterButtonStartPositionX = 59;       // should be function of above parameters.
+int enterButtonStartPositionY = keyboardStartPositionPerLine[2].y;
+// ! Back Button
+ImVec2 backButtonSize(60, 50);
+int backButtonSpacingY = 10;
+int backButtonStartPositionX = 463;       // should be function of above parameters.
+int backButtonStartPositionY = keyboardStartPositionPerLine[2].y;
+// ! - Guess Panel
+ImVec2 guessPanelSize(70, 70);
+float guessPanelRound = 35.0f;
+int guessPanelSpacingX = 10;
+int guessPanelSpacingY = 10;
+int guessPanelStartPositionX = 100;    // should be function of above parameters.
+int guessPanelStartPositionY = 55;     // should be function of above parameters.
 
 #if defined(WITH_GUI)
 static void glfw_error_callback(int error, const char* description)
@@ -61,6 +96,19 @@ public:
     ImVec4 hovered;
     ImVec4 active;
 };
+
+ButtonColor enterButtonColor
+(
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
+);
+ButtonColor backButtonColor
+(
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+    (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
+);
 
 void RunWindowVibrationEffect(bool open)
 {
@@ -154,153 +202,164 @@ void ShowTodayPuzzle()
 
     bool guessTrigger = false;
 
-    if (ImGui::TreeNode("Show My Little Keyboard"))
+
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    int currentIndex = 0;
+
+    // ! START POS
+    ImGui::SetCursorPos(ImVec2(200, 200));
+
+    for (auto i = 0; i < lettersPerLines.size(); ++i)
     {
-        int currentIndex = 0;
-        ImVec2 gridSize(40, 40);
-
-        for (auto i = 0; i < lettersPerLines.size(); ++i)
+        ImGui::SetCursorPos(keyboardStartPositionPerLine[i]);
+        for (auto j = 0; j < lettersPerLines[i].size(); ++j)
         {
-            for (auto j = 0; j < lettersPerLines[i].size(); ++j)
+            ImVec2 alignment = ImVec2((float)j / 2.0f, (float)i / 2.0f);
+            std::string name(1, lettersPerLines[i][j]);
+            if (j > 0)
             {
-                ImVec2 alignment = ImVec2((float) j / 2.0f, (float) i / 2.0f);
-                std::string name(1, lettersPerLines[i][j]);
-                if (j > 0)
-                {
-                    ImGui::SameLine();
-                }
-
-                auto state = letterStates[lettersPerLines[i][j]];
-                if (fixedStateToCorrect[lettersPerLines[i][j]])
-                {
-                    state = ws_correct;
-                }
-                auto color = stateColorCodeForKeyboard[state];
-                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)color.hovered);
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)color.active);
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
-                ImGui::PushFont(g_font_20);
-                if (ImGui::Button(name.c_str(), gridSize))
-                {
-                    guessList[currentGuess] += name;
-                }
-                ImGui::PopFont();
-                ImGui::PopStyleVar(1);
-                ImGui::PopStyleColor(3);
-
-                ++currentIndex;
+                ImGui::SameLine();
             }
+
+            auto state = letterStates[lettersPerLines[i][j]];
+            if (fixedStateToCorrect[lettersPerLines[i][j]])
+            {
+                state = ws_correct;
+            }
+            auto color = stateColorCodeForKeyboard[state];
+            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)color.hovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)color.active);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+            ImGui::PushFont(g_font_20);
+            if (ImGui::Button(name.c_str(), keyboardSize))
+            {
+                guessList[currentGuess] += name;
+            }
+            ImGui::PopFont();
+            ImGui::PopStyleVar(1);
+            ImGui::PopStyleColor(3);
+
+            ++currentIndex;
         }
+    }
 
-        bool valid = true;
+    bool valid = true;
 
-        ImGui::PushFont(g_font_20);
-        if (ImGui::Button("enter"))
+    ImGui::SetCursorPos(ImVec2(enterButtonStartPositionX, enterButtonStartPositionY));
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)enterButtonColor.normal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)enterButtonColor.hovered);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)enterButtonColor.active);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+    ImGui::PushFont(g_font_20);
+    if (ImGui::Button("enter", enterButtonSize))
+    {
+        std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
+
+        valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
+
+        if (valid)
         {
-            std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
-
-            valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
-                        
-            if (valid)
+            stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
+            for (auto i = 0; i < guessList[currentGuess].size(); ++i)
             {
-                stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
-                for (auto i = 0; i < guessList[currentGuess].size(); ++i)
+                letterStates[guessList[currentGuess][i]] = stateList[currentGuess][i];
+                if (stateList[currentGuess][i] == ws_correct)
                 {
-                    letterStates[guessList[currentGuess][i]] = stateList[currentGuess][i];
-                    if (stateList[currentGuess][i] == ws_correct)
-                    {
-                        fixedStateToCorrect[guessList[currentGuess][i]] = true;
-                    }
+                    fixedStateToCorrect[guessList[currentGuess][i]] = true;
                 }
-
-                bool _win = true;
-                for (auto i = 0; i < stateList[currentGuess].size(); ++i)
-                {
-                    _win &= stateList[currentGuess][i] == ws_correct;
-                }
-                win = _win;
-                ++currentGuess;
             }
-            else
+
+            bool _win = true;
+            for (auto i = 0; i < stateList[currentGuess].size(); ++i)
             {
-                ++g_frame_count;
-                guessList[currentGuess].clear();
+                _win &= stateList[currentGuess][i] == ws_correct;
             }
-        }
-        ImGui::PopFont();
-
-        // try to effect for N frame
-        bool open = !valid;
-        if (g_frame_count > 0 && g_frame_count < 10
-            )
-        {
-            g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
-            ++g_frame_count;
+            win = _win;
+            ++currentGuess;
         }
         else
         {
-            g_window_pos = g_window_pos_default;
-            g_frame_count = 0;
+            ++g_frame_count;
+            guessList[currentGuess].clear();
         }
-
-        ImGui::SameLine();
-
-        ImGui::PushFont(g_font_20);
-        if (ImGui::Button("back"))
-        {
-            if (!guessList[currentGuess].empty())
-            {
-                guessList[currentGuess].pop_back();
-            }
-        }
-        ImGui::PopFont();
-
-        ImGui::TreePop();
     }
-    if (ImGui::TreeNode("Show My Guesses"))
+    ImGui::PopFont();
+    ImGui::PopStyleVar(1);
+    ImGui::PopStyleColor(3);
+
+    // try to effect for N frame
+    bool open = !valid;
+    if (g_frame_count > 0 && g_frame_count < 10
+        )
     {
-        ImVec2 gridSize(40, 40);
-        ImGuiStyle& style = ImGui::GetStyle();
+        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
+        ++g_frame_count;
+    }
+    else
+    {
+        g_window_pos = g_window_pos_default;
+        g_frame_count = 0;
+    }
 
-        for (int i = 0; i < guessLimit; ++i)
+    ImGui::SetCursorPos(ImVec2(backButtonStartPositionX, backButtonStartPositionY));
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)backButtonColor.normal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)backButtonColor.hovered);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)backButtonColor.active);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+    ImGui::PushFont(g_font_20);
+    if (ImGui::Button("back", backButtonSize))
+    {
+        if (!guessList[currentGuess].empty())
         {
-            for (auto j = 0; j < wordLength; ++j) {
-                if (j > 0)
-                {
-                    ImGui::SameLine();
-                }
-
-                //ImGui::PushID(i * wordLength + j);
-
-                std::string value = " ";
-                if (i <= currentGuess)
-                {
-                    if (j < guessList[i].size())
-                    {
-                        value = guessList[i][j];
-                    }
-                }
-
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
-                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-
-                auto state = stateList[i];
-                auto color = stateColorCodeForGuessList[state[j]];
-                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
-
-                ImGui::PushFont(g_font_20);
-
-                ImGui::Button(value.c_str(), gridSize);
-                
-                ImGui::PopFont();
-                ImGui::PopStyleColor(1);
-                ImGui::PopItemFlag();
-                ImGui::PopStyleVar(1);
-                //ImGui::PopID();
-            }
+            guessList[currentGuess].pop_back();
         }
-        ImGui::TreePop();
+    }
+    ImGui::PopFont();
+    ImGui::PopStyleVar(1);
+    ImGui::PopStyleColor(3);
+
+    // ! GUESS PANEL SECTION
+    for (int i = 0; i < guessLimit; ++i)
+    {
+        ImGui::SetCursorPos(
+            ImVec2(
+                guessPanelStartPositionX, 
+                guessPanelStartPositionY + i * (guessPanelSize.y + guessPanelSpacingY)
+            )
+        );
+        for (auto j = 0; j < wordLength; ++j) {
+            if (j > 0)
+            {
+                ImGui::SameLine();
+            }
+
+            std::string value = " ";
+            if (i <= currentGuess)
+            {
+                if (j < guessList[i].size())
+                {
+                    value = guessList[i][j];
+                }
+            }
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, guessPanelRound);
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+
+            auto state = stateList[i];
+            auto color = stateColorCodeForGuessList[state[j]];
+            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
+
+            ImGui::PushFont(g_font_24);
+
+            ImGui::Button(value.c_str(), guessPanelSize);
+
+            ImGui::PopFont();
+            ImGui::PopStyleColor(1);
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar(1);
+        }
     }
 
     if (win)
@@ -398,6 +457,7 @@ int main()
     io.Fonts->AddFontDefault();
     g_font_12 = io.Fonts->AddFontFromFileTTF("fonts/arial.ttf", 12);
     g_font_20 = io.Fonts->AddFontFromFileTTF("fonts/arial.ttf", 20);
+    g_font_24 = io.Fonts->AddFontFromFileTTF("fonts/arial.ttf", 24);
 
 
     // Main loop
@@ -446,9 +506,9 @@ int main()
         if (show_max_dev_windows)
         {
             ImGui::SetNextWindowPos(g_window_pos);
-            //ImGui::SetNextWindowSize(ImVec2());
+            ImGui::SetNextWindowSize(puzzelWindowSize);
             ImGui::Begin("Start Today's Puzzle", &show_max_dev_windows);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("...");
+            //ImGui::Text("...");
             ShowTodayPuzzle();
 //            if (ImGui::Button("Close Me"))
 //            {
