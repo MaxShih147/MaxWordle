@@ -1,5 +1,6 @@
 ﻿#include <algorithm>
 #include <iostream>
+ #include <codecvt>
 #include <string>
 #include <random>
 #include <vector>
@@ -215,6 +216,13 @@ std::map<std::string, ImGuiKey> keyNameMap
     {"Z", ImGuiKey_Z}, {"enter", ImGuiKey_Enter}, {"back", ImGuiKey_Backspace}
 };
 
+std::map<WordleState, wchar_t const*> sharingTextMap
+{
+    {ws_correct, L"🟩"},
+    {ws_included, L"🟨"},
+    {ws_excluded, L"⬛"}
+};
+
 void ShowTodayPuzzle()
 {
     static bool win = false;
@@ -226,6 +234,7 @@ void ShowTodayPuzzle()
     static std::vector<std::vector<WordleState>> stateList(guessLimit, defaultStates);
 
     ImGuiStyle& style = ImGui::GetStyle();
+    ImGuiIO& io = ImGui::GetIO();
 
     //if (ImGui::TreeNode("Keyboard, Gamepad & Navigation State"))
     //{
@@ -342,6 +351,7 @@ void ShowTodayPuzzle()
         if (g_wordle->CheckGuessValidation(guessList[currentGuess]))
         {
             stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
+
             for (auto i = 0; i < guessList[currentGuess].size(); ++i)
             {
                 letterStates[guessList[currentGuess][i]] = stateList[currentGuess][i];
@@ -463,6 +473,20 @@ void ShowTodayPuzzle()
 
         if (ImGui::Button("Share", shareButtonSize))
         {
+            std::string shareResult = 
+                "Max Wordle " + std::to_string(currentGuess) + "/" + std::to_string(guessLimit) + "\n\n";
+            
+            // ! Append clipboard text for sharing.
+            for (auto i = 0; i < currentGuess; ++i)
+            {
+                for (auto j = 0; j < stateList[i].size(); ++j)
+                {
+                    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+                    shareResult += convert.to_bytes(sharingTextMap[stateList[i][j]]);
+                }
+                shareResult += "\n";
+            }
+            ImGui::SetClipboardText(shareResult.c_str());
         }
 
         ImGui::PopFont();
@@ -513,7 +537,11 @@ void ShowTodayPuzzle()
 #endif
 
 #if defined(WITH_GUI)
+#if defined(_DEBUG)
 int main()
+#else
+int WinMain()
+#endif
 {
     g_wordle = new Wordle;
     g_wordle->GenerateTodayPuzzle();
