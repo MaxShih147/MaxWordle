@@ -137,88 +137,86 @@ ButtonColor shareButtonColor
     (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
 );
 
-//void RunWindowVibrationEffect(bool open)
-//{
-//    if (open)
-//    {
-//        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
-//    }
-//    else
-//    {
-//        g_window_pos = g_window_pos_default;
-//    }
-//}
+static std::vector<std::vector<char>> lettersPerLines
+{
+        {'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'},
+        {'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'},
+        {'Z', 'X', 'C', 'V', 'B', 'N', 'M'}
+};
+
+static std::map<char, WordleState> letterStates
+{
+    {'A', ws_unknown}, {'B', ws_unknown}, {'C', ws_unknown}, {'D', ws_unknown}, {'E', ws_unknown},
+    {'F', ws_unknown}, {'G', ws_unknown}, {'H', ws_unknown}, {'I', ws_unknown}, {'J', ws_unknown},
+    {'K', ws_unknown}, {'L', ws_unknown}, {'M', ws_unknown}, {'N', ws_unknown}, {'O', ws_unknown},
+    {'P', ws_unknown}, {'Q', ws_unknown}, {'R', ws_unknown}, {'S', ws_unknown}, {'T', ws_unknown},
+    {'U', ws_unknown}, {'V', ws_unknown}, {'W', ws_unknown}, {'X', ws_unknown}, {'Y', ws_unknown},
+    {'Z', ws_unknown}
+};
+
+static std::map<char, bool> fixedStateToCorrect
+{
+    {'A', false}, {'B', false}, {'C', false}, {'D', false}, {'E', false},
+    {'F', false}, {'G', false}, {'H', false}, {'I', false}, {'J', false},
+    {'K', false}, {'L', false}, {'M', false}, {'N', false}, {'O', false},
+    {'P', false}, {'Q', false}, {'R', false}, {'S', false}, {'T', false},
+    {'U', false}, {'V', false}, {'W', false}, {'X', false}, {'Y', false},
+    {'Z', false}
+};
+
+
+static std::map<WordleState, ButtonColor> stateColorCodeForKeyboard
+{
+    {ws_unknown, ButtonColor(
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
+    {ws_correct, ButtonColor(
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
+    {ws_included, ButtonColor(
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
+    {ws_excluded, ButtonColor(
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
+};
+
+static std::map<WordleState, ButtonColor> stateColorCodeForGuessList
+{
+    {ws_unknown, ButtonColor(
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
+    {ws_correct, ButtonColor(
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
+        (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
+    {ws_included, ButtonColor(
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
+        (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
+    {ws_excluded, ButtonColor(
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
+        (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
+};
+
+std::map<std::string, ImGuiKey> keyNameMap
+{
+    {"A", ImGuiKey_A}, {"B", ImGuiKey_B}, {"C", ImGuiKey_C}, {"D", ImGuiKey_D}, {"E", ImGuiKey_E},
+    {"F", ImGuiKey_F}, {"G", ImGuiKey_G}, {"H", ImGuiKey_H}, {"I", ImGuiKey_I}, {"J", ImGuiKey_J},
+    {"K", ImGuiKey_K}, {"L", ImGuiKey_L}, {"M", ImGuiKey_M}, {"N", ImGuiKey_N}, {"O", ImGuiKey_O},
+    {"P", ImGuiKey_P}, {"Q", ImGuiKey_Q}, {"R", ImGuiKey_R}, {"S", ImGuiKey_S}, {"T", ImGuiKey_T},
+    {"U", ImGuiKey_U}, {"V", ImGuiKey_V}, {"W", ImGuiKey_W}, {"X", ImGuiKey_X}, {"Y", ImGuiKey_Y},
+    {"Z", ImGuiKey_Z}, {"enter", ImGuiKey_Enter}, {"back", ImGuiKey_Backspace}
+};
 
 void ShowTodayPuzzle()
 {
-    static std::vector<std::vector<char>> lettersPerLines
-            {
-                    {'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'},
-                    {'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'},
-                    {'Z', 'X', 'C', 'V', 'B', 'N', 'M'}
-            };
-
-    static std::map<char, WordleState> letterStates
-    {
-        {'A', ws_unknown}, {'B', ws_unknown}, {'C', ws_unknown}, {'D', ws_unknown}, {'E', ws_unknown},
-        {'F', ws_unknown}, {'G', ws_unknown}, {'H', ws_unknown}, {'I', ws_unknown}, {'J', ws_unknown},
-        {'K', ws_unknown}, {'L', ws_unknown}, {'M', ws_unknown}, {'N', ws_unknown}, {'O', ws_unknown},
-        {'P', ws_unknown}, {'Q', ws_unknown}, {'R', ws_unknown}, {'S', ws_unknown}, {'T', ws_unknown},
-        {'U', ws_unknown}, {'V', ws_unknown}, {'W', ws_unknown}, {'X', ws_unknown}, {'Y', ws_unknown},
-        {'Z', ws_unknown}
-    };
-
-    static std::map<char, bool> fixedStateToCorrect
-    {
-        {'A', false}, {'B', false}, {'C', false}, {'D', false}, {'E', false},
-        {'F', false}, {'G', false}, {'H', false}, {'I', false}, {'J', false},
-        {'K', false}, {'L', false}, {'M', false}, {'N', false}, {'O', false},
-        {'P', false}, {'Q', false}, {'R', false}, {'S', false}, {'T', false},
-        {'U', false}, {'V', false}, {'W', false}, {'X', false}, {'Y', false},
-        {'Z', false}
-    };
-
-
-    static std::map<WordleState, ButtonColor> stateColorCodeForKeyboard
-    {
-        {ws_unknown, ButtonColor(
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
-        {ws_correct, ButtonColor(
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
-        {ws_included, ButtonColor(
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
-        {ws_excluded, ButtonColor(
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
-    };
-
-    static std::map<WordleState, ButtonColor> stateColorCodeForGuessList
-    {
-        {ws_unknown, ButtonColor(
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.4f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.5f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f))},
-        {ws_correct, ButtonColor(
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.6f, 0.6f),
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.7f, 0.7f),
-            (ImVec4)ImColor::HSV(2.0f / 7.0f, 0.8f, 0.8f))},
-        {ws_included, ButtonColor(
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.6f, 0.6f),
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.7f, 0.7f),
-            (ImVec4)ImColor::HSV(1.0f / 7.0f, 0.8f, 0.8f)) },
-        {ws_excluded, ButtonColor(
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.1f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.2f),
-            (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
-    };
-
     static bool win = false;
     static int wordLength = g_wordle->GetWordLength();
     static int guessLimit = g_wordle->GetGuessLimit();
@@ -228,6 +226,67 @@ void ShowTodayPuzzle()
     static std::vector<std::vector<WordleState>> stateList(guessLimit, defaultStates);
 
     ImGuiStyle& style = ImGui::GetStyle();
+
+    //if (ImGui::TreeNode("Keyboard, Gamepad & Navigation State"))
+    //{
+    //    ImGuiIO& io = ImGui::GetIO();
+
+    //    struct funcs { static bool IsLegacyNativeDupe(ImGuiKey key) { return key < 512 && ImGui::GetIO().KeyMap[key] != -1; } }; // Hide Native<>ImGuiKey duplicates when both exists in the array
+    //    const ImGuiKey key_first = 0;
+    //    //ImGui::Text("Keys down:");          for (ImGuiKey key = key_first; key < ImGuiKey_COUNT; key++) { if (funcs::IsLegacyNativeDupe(key)) continue; if (ImGui::IsKeyDown(key)) { ImGui::SameLine(); ImGui::Text("\"%s\" %d (%.02f secs)", ImGui::GetKeyName(key), key, ImGui::GetKeyData(key)->DownDuration); } }
+    //    //ImGui::Text("Keys pressed:");       for (ImGuiKey key = key_first; key < ImGuiKey_COUNT; key++) { if (funcs::IsLegacyNativeDupe(key)) continue; if (ImGui::IsKeyPressed(key)) { ImGui::SameLine(); ImGui::Text("\"%s\" %d", ImGui::GetKeyName(key), key); } }
+    //    //ImGui::Text("Keys released:");      for (ImGuiKey key = key_first; key < ImGuiKey_COUNT; key++) { if (funcs::IsLegacyNativeDupe(key)) continue; if (ImGui::IsKeyReleased(key)) { ImGui::SameLine(); ImGui::Text("\"%s\" %d", ImGui::GetKeyName(key), key); } }
+    //    //ImGui::Text("Keys mods: %s%s%s%s", io.KeyCtrl ? "CTRL " : "", io.KeyShift ? "SHIFT " : "", io.KeyAlt ? "ALT " : "", io.KeySuper ? "SUPER " : "");
+    //    //ImGui::Text("Chars queue:");        for (int i = 0; i < io.InputQueueCharacters.Size; i++) { ImWchar c = io.InputQueueCharacters[i]; ImGui::SameLine();  ImGui::Text("\'%c\' (0x%04X)", (c > ' ' && c <= 255) ? (char)c : '?', c); } // FIXME: We should convert 'c' to UTF-8 here but the functions are not public.
+    //    //ImGui::Text("NavInputs down:");     for (int i = 0; i < IM_ARRAYSIZE(io.NavInputs); i++) if (io.NavInputs[i] > 0.0f) { ImGui::SameLine(); ImGui::Text("[%d] %.2f (%.02f secs)", i, io.NavInputs[i], io.NavInputsDownDuration[i]); }
+    //    //ImGui::Text("NavInputs pressed:");  for (int i = 0; i < IM_ARRAYSIZE(io.NavInputs); i++) if (io.NavInputsDownDuration[i] == 0.0f) { ImGui::SameLine(); ImGui::Text("[%d]", i); }
+
+    //    // Draw an arbitrary US keyboard layout to visualize translated keys
+    //    {
+    //        const ImVec2 key_size = ImVec2(35.0f, 35.0f);
+    //        const float  key_rounding = 3.0f;
+    //        const ImVec2 key_face_size = ImVec2(25.0f, 25.0f);
+    //        const ImVec2 key_face_pos = ImVec2(5.0f, 3.0f);
+    //        const float  key_face_rounding = 2.0f;
+    //        const ImVec2 key_label_pos = ImVec2(7.0f, 4.0f);
+    //        const ImVec2 key_step = ImVec2(key_size.x - 1.0f, key_size.y - 1.0f);
+    //        const float  key_row_offset = 9.0f;
+
+    //        ImVec2 board_min = ImGui::GetCursorScreenPos();
+    //        ImVec2 board_max = ImVec2(board_min.x + 3 * key_step.x + 2 * key_row_offset + 10.0f, board_min.y + 3 * key_step.y + 10.0f);
+    //        ImVec2 start_pos = ImVec2(board_min.x + 5.0f - key_step.x, board_min.y);
+
+    //        struct KeyLayoutData { int Row, Col; const char* Label; ImGuiKey Key; };
+    //        const KeyLayoutData keys_to_display[] =
+    //        {
+    //            { 0, 0, "", ImGuiKey_Tab },      { 0, 1, "Q", ImGuiKey_Q }, { 0, 2, "W", ImGuiKey_W }, { 0, 3, "E", ImGuiKey_E }, { 0, 4, "R", ImGuiKey_R },
+    //            { 1, 0, "", ImGuiKey_CapsLock }, { 1, 1, "A", ImGuiKey_A }, { 1, 2, "S", ImGuiKey_S }, { 1, 3, "D", ImGuiKey_D }, { 1, 4, "F", ImGuiKey_F },
+    //            { 2, 0, "", ImGuiKey_LeftShift },{ 2, 1, "Z", ImGuiKey_Z }, { 2, 2, "X", ImGuiKey_X }, { 2, 3, "C", ImGuiKey_C }, { 2, 4, "V", ImGuiKey_V }
+    //        };
+
+    //        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    //        draw_list->PushClipRect(board_min, board_max, true);
+    //        for (int n = 0; n < IM_ARRAYSIZE(keys_to_display); n++)
+    //        {
+    //            const KeyLayoutData* key_data = &keys_to_display[n];
+    //            ImVec2 key_min = ImVec2(start_pos.x + key_data->Col * key_step.x + key_data->Row * key_row_offset, start_pos.y + key_data->Row * key_step.y);
+    //            ImVec2 key_max = ImVec2(key_min.x + key_size.x, key_min.y + key_size.y);
+    //            draw_list->AddRectFilled(key_min, key_max, IM_COL32(204, 204, 204, 255), key_rounding);
+    //            draw_list->AddRect(key_min, key_max, IM_COL32(24, 24, 24, 255), key_rounding);
+    //            ImVec2 face_min = ImVec2(key_min.x + key_face_pos.x, key_min.y + key_face_pos.y);
+    //            ImVec2 face_max = ImVec2(face_min.x + key_face_size.x, face_min.y + key_face_size.y);
+    //            draw_list->AddRect(face_min, face_max, IM_COL32(193, 193, 193, 255), key_face_rounding, ImDrawFlags_None, 2.0f);
+    //            draw_list->AddRectFilled(face_min, face_max, IM_COL32(252, 252, 252, 255), key_face_rounding);
+    //            ImVec2 label_min = ImVec2(key_min.x + key_label_pos.x, key_min.y + key_label_pos.y);
+    //            draw_list->AddText(label_min, IM_COL32(64, 64, 64, 255), key_data->Label);
+    //            if (ImGui::IsKeyDown(key_data->Key))
+    //                draw_list->AddRectFilled(key_min, key_max, IM_COL32(255, 0, 0, 128), key_rounding);
+    //        }
+    //        draw_list->PopClipRect();
+    //        ImGui::Dummy(ImVec2(board_max.x - board_min.x, board_max.y - board_min.y));
+    //    }
+    //    ImGui::TreePop();
+    //}
 
     // ! START POS
     ImGui::SetCursorPos(ImVec2(200, 200));
@@ -255,9 +314,13 @@ void ShowTodayPuzzle()
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)color.active);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
             ImGui::PushFont(g_font_20);
-            if (ImGui::Button(name.c_str(), keyboardSize))
+            if (ImGui::Button(name.c_str(), keyboardSize) || 
+                ImGui::IsKeyPressed(keyNameMap[name]))
             {
-                guessList[currentGuess] += name;
+                if (guessList[currentGuess].size() < wordLength)
+                {
+                    guessList[currentGuess] += name;
+                }
             }
             ImGui::PopFont();
             ImGui::PopStyleVar(1);
@@ -271,7 +334,8 @@ void ShowTodayPuzzle()
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)enterButtonColor.active);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
     ImGui::PushFont(g_font_20);
-    if (ImGui::Button("enter", enterButtonSize))
+    if (ImGui::Button("enter", enterButtonSize) || 
+        ImGui::IsKeyPressed(keyNameMap["enter"]))
     {
         std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
 
@@ -325,7 +389,8 @@ void ShowTodayPuzzle()
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)backButtonColor.active);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
     ImGui::PushFont(g_font_20);
-    if (ImGui::Button("back", backButtonSize))
+    if (ImGui::Button("back", backButtonSize) || 
+        ImGui::IsKeyPressed(keyNameMap["back"]))
     {
         if (!guessList[currentGuess].empty())
         {
