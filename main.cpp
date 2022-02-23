@@ -39,6 +39,9 @@ ImVec2 g_window_pos_default(400, 50);
 ImVec2 g_window_pos = g_window_pos_default;
 int g_frame_count = 0;
 
+ImGuiWindowFlags g_main_window_flags = ImGuiWindowFlags_NoDecoration;
+
+
 // Generate today random answer from answer list.
 std::random_device rd;
 std::mt19937 mt(rd());
@@ -94,6 +97,8 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+ImColor backgroundColor = ImColor::HSV(120.0f / 360.0f, 1.0f, 0.024f);
+
 class ButtonColor
 {
 public:
@@ -132,17 +137,17 @@ ButtonColor shareButtonColor
     (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.6f)
 );
 
-void RunWindowVibrationEffect(bool open)
-{
-    if (open)
-    {
-        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
-    }
-    else
-    {
-        g_window_pos = g_window_pos_default;
-    }
-}
+//void RunWindowVibrationEffect(bool open)
+//{
+//    if (open)
+//    {
+//        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
+//    }
+//    else
+//    {
+//        g_window_pos = g_window_pos_default;
+//    }
+//}
 
 void ShowTodayPuzzle()
 {
@@ -214,20 +219,15 @@ void ShowTodayPuzzle()
             (ImVec4)ImColor::HSV(0.0f / 7.0f, 0.0f, 0.3f))}
     };
 
+    static bool win = false;
     static int wordLength = g_wordle->GetWordLength();
     static int guessLimit = g_wordle->GetGuessLimit();
+    static int currentGuess = 0;
     static std::vector<WordleState> defaultStates(wordLength, ws_unknown);
     static std::vector<std::string> guessList(guessLimit, "");
     static std::vector<std::vector<WordleState>> stateList(guessLimit, defaultStates);
-    static int currentGuess = 0;
-    static bool win = false;
-
-    bool guessTrigger = false;
-
 
     ImGuiStyle& style = ImGui::GetStyle();
-
-    int currentIndex = 0;
 
     // ! START POS
     ImGui::SetCursorPos(ImVec2(200, 200));
@@ -249,7 +249,7 @@ void ShowTodayPuzzle()
             {
                 state = ws_correct;
             }
-            auto color = stateColorCodeForKeyboard[state];
+            const auto& color = stateColorCodeForKeyboard[state];
             ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)color.hovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)color.active);
@@ -262,12 +262,8 @@ void ShowTodayPuzzle()
             ImGui::PopFont();
             ImGui::PopStyleVar(1);
             ImGui::PopStyleColor(3);
-
-            ++currentIndex;
         }
     }
-
-    bool valid = true;
 
     ImGui::SetCursorPos(ImVec2(enterButtonStartPositionX, enterButtonStartPositionY));
     ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)enterButtonColor.normal);
@@ -279,9 +275,7 @@ void ShowTodayPuzzle()
     {
         std::cout << "[DEBUG] current guess = " << guessList[currentGuess] << "\n";
 
-        valid = g_wordle->CheckGuessValidation(guessList[currentGuess]);
-
-        if (valid)
+        if (g_wordle->CheckGuessValidation(guessList[currentGuess]))
         {
             stateList[currentGuess] = g_wordle->GetGuessResult(guessList[currentGuess]);
             for (auto i = 0; i < guessList[currentGuess].size(); ++i)
@@ -303,7 +297,7 @@ void ShowTodayPuzzle()
         }
         else
         {
-            ++g_frame_count;
+            //++g_frame_count;
             guessList[currentGuess].clear();
         }
     }
@@ -312,18 +306,18 @@ void ShowTodayPuzzle()
     ImGui::PopStyleColor(3);
 
     // try to effect for N frame
-    bool open = !valid;
-    if (g_frame_count > 0 && g_frame_count < 10
-        )
-    {
-        g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
-        ++g_frame_count;
-    }
-    else
-    {
-        g_window_pos = g_window_pos_default;
-        g_frame_count = 0;
-    }
+    //bool open = !valid;
+    //if (g_frame_count > 0 && g_frame_count < 10
+    //    )
+    //{
+    //    g_window_pos.x += g_frame_count % 2 == 0 ? 10 : -10;
+    //    ++g_frame_count;
+    //}
+    //else
+    //{
+    //    g_window_pos = g_window_pos_default;
+    //    g_frame_count = 0;
+    //}
 
     ImGui::SetCursorPos(ImVec2(backButtonStartPositionX, backButtonStartPositionY));
     ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)backButtonColor.normal);
@@ -369,8 +363,7 @@ void ShowTodayPuzzle()
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, guessPanelRound);
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 
-            auto state = stateList[i];
-            auto color = stateColorCodeForGuessList[state[j]];
+            const auto& color = stateColorCodeForGuessList[stateList[i][j]];
             ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)color.normal);
 
             ImGui::PushFont(g_font_24);
@@ -384,14 +377,16 @@ void ShowTodayPuzzle()
         }
     }
 
-    if (win)
+    if (win || currentGuess >= guessLimit)
     {
+        // ! Try to freeze main window first.
+        g_main_window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs;
 
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration/* | ImGuiWindowFlags_NoBackground*/;
-
+        bool open = true;
         ImGui::SetNextWindowPos(ImVec2(500, 250));
         ImGui::SetNextWindowSize(ImVec2(384, 400));
-        ImGui::Begin("Win", &win, window_flags);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        ImGui::Begin("End", &open, window_flags);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
         //ImGui::Text("You Win!");
 
         ImGui::SetCursorPos(ImVec2(shareButtonStartPositionX, shareButtonStartPositionY));
@@ -438,6 +433,9 @@ void ShowTodayPuzzle()
 
             guessList = std::vector<std::string>(guessLimit, "");
             stateList = std::vector<std::vector<WordleState>>(guessLimit, defaultStates);
+
+            // ! Unfreeze the main window
+            g_main_window_flags = ImGuiWindowFlags_NoDecoration;
         }
 
         ImGui::PopFont();
@@ -522,7 +520,7 @@ int main()
 
     // Our state
     bool show_max_dev_windows = true;
-    bool show_demo_window = true;
+    bool show_demo_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     //ImGuiIO& io = ImGui::GetIO();
@@ -554,38 +552,44 @@ int main()
         }
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
+        //{
+        //    static float f = 0.0f;
+        //    static int counter = 0;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+        //    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+        //    ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+        //    ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+        //    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        //    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+        //    if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+        //        counter++;
+        //    ImGui::SameLine();
+        //    ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
+        //    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        //    ImGui::End();
+        //}
 
         if (show_max_dev_windows)
         {
-            ImGui::SetNextWindowPos(g_window_pos);
-            ImGui::SetNextWindowSize(puzzelWindowSize);
-            ImGui::Begin("Start Today's Puzzle", &show_max_dev_windows);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            //ImGui::Text("...");
+            //ImGui::SetNextWindowPos(g_window_pos);
+            //ImGui::SetNextWindowSize(puzzelWindowSize);
+            int width, height;
+            glfwGetWindowSize(window, &width, &height);
+            ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
+            ImGui::SetNextWindowSize(ImVec2(width, height));
+
+            //ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(backgroundColor)); // Set window background to red
+            ImGui::Begin(
+                "Start Today's Puzzle", 
+                &show_max_dev_windows, 
+                g_main_window_flags
+            );
             ShowTodayPuzzle();
-//            if (ImGui::Button("Close Me"))
-//            {
-//                show_max_dev_windows = false;
-//            }
+            //ImGui::PopStyleColor();
             ImGui::End();
         }
 
